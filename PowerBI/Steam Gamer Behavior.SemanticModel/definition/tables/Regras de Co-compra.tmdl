@@ -1,0 +1,118 @@
+table 'Regras de Co-compra'
+	lineageTag: 1a5f8d5b-ffb3-5253-9a69-0c96665823c7
+
+	measure 'Qtd Regras' = COUNTROWS('Regras de Co-compra')
+		formatString: #,0
+		lineageTag: c9d049cf-e0c7-571b-8528-1140d15df45a
+
+	measure 'Lift Máximo' = MAX('Regras de Co-compra'[Lift])
+		formatString: 0.00
+		lineageTag: 638d46d2-ec46-576d-ac2e-631abb9d3213
+
+	measure 'Confiança Média' = AVERAGE('Regras de Co-compra'[Confiança])
+		formatString: 0.0%
+		lineageTag: 0c8595c1-f927-5ca7-8ec1-c1c7d693a17f
+
+	measure 'Lift Médio' = AVERAGE('Regras de Co-compra'[Lift])
+		formatString: 0.00
+		lineageTag: 88fc2a73-feaf-5e61-bc86-750342d3a9f5
+
+	/// Lift apenas para as 15 regras de maior lift no contexto.
+	measure 'Lift (Top 15)' =
+			VAR _rank =
+			    RANKX(ALLSELECTED('Regras de Co-compra'[Regra]), [Lift Máximo], , DESC, Dense)
+			RETURN
+			    IF(ISINSCOPE('Regras de Co-compra'[Regra]) && _rank <= 15, [Lift Máximo])
+		formatString: 0.00
+		lineageTag: 344b6edb-c7d0-5aea-9060-401ca589b293
+
+	column 'Se comprou'
+		dataType: string
+		lineageTag: d1d125d0-e571-5e85-9a19-be24efa4b2d7
+		summarizeBy: none
+		sourceColumn: Se comprou
+
+		annotation SummarizationSetBy = User
+
+	column 'Também comprou'
+		dataType: string
+		lineageTag: 2a36fe08-8a68-54f4-b3c6-1ace92dfa8ac
+		summarizeBy: none
+		sourceColumn: Também comprou
+
+		annotation SummarizationSetBy = User
+
+	column Regra
+		dataType: string
+		lineageTag: 653d7c52-73d9-53ef-87aa-8a33ce622d38
+		summarizeBy: none
+		sourceColumn: Regra
+
+		annotation SummarizationSetBy = User
+
+	column Suporte
+		dataType: double
+		formatString: 0.0%
+		lineageTag: b64eeb62-53ac-5115-87b7-0303e2666fea
+		summarizeBy: none
+		sourceColumn: Suporte
+
+		annotation SummarizationSetBy = User
+
+	column Confiança
+		dataType: double
+		formatString: 0.0%
+		lineageTag: 3aa735d2-ecf5-5d8d-b77b-ffed513b795c
+		summarizeBy: none
+		sourceColumn: Confiança
+
+		annotation SummarizationSetBy = User
+
+	column Lift
+		dataType: double
+		formatString: 0.00
+		lineageTag: 3c90372c-c4d4-5370-8e15-290b9efba96a
+		summarizeBy: none
+		sourceColumn: Lift
+
+		annotation SummarizationSetBy = User
+
+	column Leverage
+		dataType: double
+		formatString: 0.0000
+		lineageTag: 7b43c57e-bda2-51b8-9772-e652fc15293a
+		summarizeBy: none
+		sourceColumn: Leverage
+
+		annotation SummarizationSetBy = User
+
+	column Conviction
+		dataType: double
+		formatString: 0.00
+		lineageTag: c857c8ec-31dd-5866-a019-ffc2fd582e67
+		summarizeBy: none
+		sourceColumn: Conviction
+
+		annotation SummarizationSetBy = User
+
+	partition 'Regras de Co-compra' = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "fact_association_rules_pairs.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Cabecalhos = Table.PromoteHeaders(Fonte, [PromoteAllScalars=true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalhos, {
+				        {"antecedent", type text}, {"consequent", type text}, {"support", type number},
+				        {"confidence", type number}, {"lift", type number}, {"leverage", type number}, {"conviction", type number}
+				    }, "en-US"),
+				    SemErros = Table.ReplaceErrorValues(Tipos, {{"conviction", null}}),
+				    Regra = Table.AddColumn(SemErros, "Regra", each [antecedent] & " → " & [consequent], type text),
+				    Renomeadas = Table.RenameColumns(Regra, {
+				        {"antecedent", "Se comprou"}, {"consequent", "Também comprou"}, {"support", "Suporte"},
+				        {"confidence", "Confiança"}, {"lift", "Lift"}, {"leverage", "Leverage"}, {"conviction", "Conviction"}
+				    })
+				in
+				    Renomeadas
+
+	annotation PBI_ResultType = Table
+

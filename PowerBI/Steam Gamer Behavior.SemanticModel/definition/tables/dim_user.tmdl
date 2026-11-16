@@ -1,0 +1,148 @@
+table dim_user
+	lineageTag: f3982a91-63a3-569a-bc70-67bf2b2ccbe1
+
+	column 'ID Usuário'
+		dataType: int64
+		formatString: 0
+		lineageTag: 4563898f-766c-5ad9-bbe4-eada1a44c8f5
+		summarizeBy: none
+		sourceColumn: ID Usuário
+
+		annotation SummarizationSetBy = User
+
+	column Persona
+		dataType: string
+		lineageTag: 93622e78-5b74-5381-9871-d650b185992f
+		summarizeBy: none
+		sourceColumn: Persona
+		sortByColumn: persona_order
+
+		annotation SummarizationSetBy = User
+
+	column 'Cluster K-Means'
+		dataType: string
+		lineageTag: fbbfe86f-8318-590b-8fa2-fddc2f123325
+		summarizeBy: none
+		sourceColumn: Cluster K-Means
+		sortByColumn: cluster_order
+
+		annotation SummarizationSetBy = User
+
+	column n_purchases
+		dataType: int64
+		formatString: #,0
+		displayFolder: Features
+		lineageTag: 49753341-5025-5322-8de1-c118c5f2945e
+		summarizeBy: none
+		sourceColumn: n_purchases
+
+		annotation SummarizationSetBy = User
+
+	column n_played
+		dataType: int64
+		formatString: #,0
+		displayFolder: Features
+		lineageTag: 2269e1d5-b6e0-58fa-9156-3b5919044c1d
+		summarizeBy: none
+		sourceColumn: n_played
+
+		annotation SummarizationSetBy = User
+
+	column total_hours
+		dataType: double
+		formatString: #,0.0
+		displayFolder: Features
+		lineageTag: 98f9bf7d-b2a4-5296-9c61-cd433f7e0963
+		summarizeBy: none
+		sourceColumn: total_hours
+
+		annotation SummarizationSetBy = User
+
+	column max_hours
+		dataType: double
+		formatString: #,0.0
+		displayFolder: Features
+		lineageTag: c86b5102-8177-5f9f-b7d8-baf923fd1a26
+		summarizeBy: none
+		sourceColumn: max_hours
+
+		annotation SummarizationSetBy = User
+
+	column avg_hours_played_game
+		dataType: double
+		formatString: #,0.0
+		displayFolder: Features
+		lineageTag: c39e765e-3fd2-5a89-8cde-2d7896c88b8b
+		summarizeBy: none
+		sourceColumn: avg_hours_played_game
+
+		annotation SummarizationSetBy = User
+
+	column play_purchase_ratio
+		dataType: double
+		formatString: 0.0%
+		displayFolder: Features
+		lineageTag: 480aa94c-ed66-565d-a9c8-46fe70e76d9c
+		summarizeBy: none
+		sourceColumn: play_purchase_ratio
+
+		annotation SummarizationSetBy = User
+
+	column share_top_game_hours
+		dataType: double
+		formatString: 0.0%
+		displayFolder: Features
+		lineageTag: 7f690c8d-8282-5d10-aaac-0709b822dbf9
+		summarizeBy: none
+		sourceColumn: share_top_game_hours
+
+		annotation SummarizationSetBy = User
+
+	column persona_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 5232dbf9-045b-510a-90d6-4611e1f82ee0
+		summarizeBy: none
+		sourceColumn: persona_order
+
+		annotation SummarizationSetBy = User
+
+	column cluster_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 3ca4ee0d-1567-56b8-be89-659d73d79cea
+		summarizeBy: none
+		sourceColumn: cluster_order
+
+		annotation SummarizationSetBy = User
+
+	partition dim_user = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "dim_user.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Cabecalhos = Table.PromoteHeaders(Fonte, [PromoteAllScalars=true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalhos, {
+				        {"user_id", Int64.Type}, {"n_purchases", Int64.Type}, {"n_played", Int64.Type},
+				        {"total_hours", type number}, {"max_hours", type number}, {"avg_hours_played_game", type number},
+				        {"play_purchase_ratio", type number}, {"share_top_game_hours", type number},
+				        {"segment_rule", type text}, {"cluster_kmeans", type number}
+				    }, "en-US"),
+				    Cluster = Table.AddColumn(Tipos, "Cluster K-Means", each if [cluster_kmeans] = null then "Sem cluster" else "Cluster " & Text.From(Int64.From([cluster_kmeans])), type text),
+				    OrdemCluster = Table.AddColumn(Cluster, "cluster_order", each if [cluster_kmeans] = null then 99 else Int64.From([cluster_kmeans]), Int64.Type),
+				    OrdemPersona = Table.AddColumn(OrdemCluster, "persona_order", each
+				        if [segment_rule] = "Casual" then 1
+				        else if [segment_rule] = "Generalista" then 2
+				        else if [segment_rule] = "Especialista" then 3
+				        else if [segment_rule] = "Hardcore" then 4
+				        else if [segment_rule] = "Colecionador" then 5
+				        else 9, Int64.Type),
+				    Removidas = Table.RemoveColumns(OrdemPersona, {"cluster_kmeans"}),
+				    Renomeadas = Table.RenameColumns(Removidas, {{"user_id", "ID Usuário"}, {"segment_rule", "Persona"}})
+				in
+				    Renomeadas
+
+	annotation PBI_ResultType = Table
+

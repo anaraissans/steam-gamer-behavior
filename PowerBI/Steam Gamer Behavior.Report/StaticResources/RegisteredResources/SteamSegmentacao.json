@@ -1,0 +1,17 @@
+{
+  "name": "SteamSegmentacao",
+  "dataColors": [
+    "#2A6FDB",
+    "#E66C37",
+    "#1AAB40",
+    "#6B007B",
+    "#D9B300",
+    "#1B2838",
+    "#15C6F4",
+    "#D64550",
+    "#744EC2"
+  ],
+  "foreground": "#252423",
+  "background": "#FFFFFF",
+  "tableAccent": "#1B2838"
+}

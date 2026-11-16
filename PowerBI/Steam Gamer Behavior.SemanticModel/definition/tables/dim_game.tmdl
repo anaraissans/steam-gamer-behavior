@@ -1,0 +1,140 @@
+table dim_game
+	lineageTag: 572a9564-c785-5447-99fd-67a11644854d
+
+	column Jogo
+		dataType: string
+		lineageTag: df108edd-6400-5418-b894-b3f6cef5e0f5
+		summarizeBy: none
+		sourceColumn: Jogo
+
+		annotation SummarizationSetBy = User
+
+	column Popularidade
+		dataType: string
+		lineageTag: ace7792e-7281-5dc9-906f-4fbf5488abcd
+		summarizeBy: none
+		sourceColumn: Popularidade
+		sortByColumn: pop_order
+
+		annotation SummarizationSetBy = User
+
+	column Engajamento
+		dataType: string
+		lineageTag: a9f95442-b97d-5350-84dc-be031b3e0915
+		summarizeBy: none
+		sourceColumn: Engajamento
+		sortByColumn: eng_order
+
+		annotation SummarizationSetBy = User
+
+	column 'Segmento do Jogo'
+		dataType: string
+		lineageTag: 61fd7ee2-6dde-52d5-921c-9dfddc5dcb48
+		summarizeBy: none
+		sourceColumn: Segmento do Jogo
+		sortByColumn: segment_order
+
+		annotation SummarizationSetBy = User
+
+	column buyers
+		dataType: int64
+		formatString: #,0
+		displayFolder: Métricas (notebook)
+		lineageTag: 9a179749-ac88-596d-b37c-d4eb15d57fe7
+		summarizeBy: none
+		sourceColumn: buyers
+
+		annotation SummarizationSetBy = User
+
+	column players
+		dataType: int64
+		formatString: #,0
+		displayFolder: Métricas (notebook)
+		lineageTag: 075a7fba-f7dd-5c29-864d-12614c625adb
+		summarizeBy: none
+		sourceColumn: players
+
+		annotation SummarizationSetBy = User
+
+	column total_hours
+		dataType: double
+		formatString: #,0.0
+		displayFolder: Métricas (notebook)
+		lineageTag: 7f0e74cd-8ee9-5e77-9777-0ce3b293cd3b
+		summarizeBy: none
+		sourceColumn: total_hours
+
+		annotation SummarizationSetBy = User
+
+	column avg_hours_per_player
+		dataType: double
+		formatString: #,0.0
+		displayFolder: Métricas (notebook)
+		lineageTag: ba443ec8-3b46-51cb-a76a-5b8730a56de2
+		summarizeBy: none
+		sourceColumn: avg_hours_per_player
+
+		annotation SummarizationSetBy = User
+
+	column retention
+		dataType: double
+		formatString: 0.0%
+		displayFolder: Métricas (notebook)
+		lineageTag: c2e66856-195c-5237-b56c-b6e21963bdad
+		summarizeBy: none
+		sourceColumn: retention
+
+		annotation SummarizationSetBy = User
+
+	column pop_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 6d026067-1468-5c8e-8240-356ac9a5abf7
+		summarizeBy: none
+		sourceColumn: pop_order
+
+		annotation SummarizationSetBy = User
+
+	column eng_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 720334ed-985a-5ae2-bf69-f37666c9b2d1
+		summarizeBy: none
+		sourceColumn: eng_order
+
+		annotation SummarizationSetBy = User
+
+	column segment_order
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: d5ca3a58-f5c8-5557-b4f6-3417c281fc43
+		summarizeBy: none
+		sourceColumn: segment_order
+
+		annotation SummarizationSetBy = User
+
+	partition dim_game = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "dim_game.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Cabecalhos = Table.PromoteHeaders(Fonte, [PromoteAllScalars=true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalhos, {
+				        {"game_name", type text}, {"buyers", Int64.Type}, {"players", Int64.Type},
+				        {"total_hours", type number}, {"avg_hours_per_player", type number}, {"retention", type number},
+				        {"pop_tier", type text}, {"eng_tier", type text}, {"game_segment", type text}
+				    }, "en-US"),
+				    OrdemPop = Table.AddColumn(Tipos, "pop_order", each if [pop_tier] = "Alta" then 1 else if [pop_tier] = "Média" then 2 else 3, Int64.Type),
+				    OrdemEng = Table.AddColumn(OrdemPop, "eng_order", each if [eng_tier] = "Alto" then 1 else if [eng_tier] = "Médio" then 2 else 3, Int64.Type),
+				    OrdemSeg = Table.AddColumn(OrdemEng, "segment_order", each [pop_order] * 10 + [eng_order], Int64.Type),
+				    Renomeadas = Table.RenameColumns(OrdemSeg, {
+				        {"game_name", "Jogo"}, {"pop_tier", "Popularidade"}, {"eng_tier", "Engajamento"}, {"game_segment", "Segmento do Jogo"}
+				    })
+				in
+				    Renomeadas
+
+	annotation PBI_ResultType = Table
+

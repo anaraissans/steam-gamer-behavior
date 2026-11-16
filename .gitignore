@@ -1,0 +1,36 @@
+# Secrets & local env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dataset (download from Kaggle; ~9 MB)
+data/*.csv
+data/*.zip
+
+# Large / regenerable exports (optional — remove these lines if you want CSVs in git)
+exports/powerbi/*.csv
+
+# Power BI local cache & machine settings
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+**/.pbi/editorSettings.json
+
+# OS & editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.user
+*.pbix.bak

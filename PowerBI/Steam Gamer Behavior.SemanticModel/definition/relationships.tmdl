@@ -1,0 +1,8 @@
+relationship 81cb3d20-eab1-5e30-a8e4-8bca48ed58ed
+	fromColumn: fact_user_game.user_id
+	toColumn: dim_user.'ID Usuário'
+
+relationship 054f265e-3770-54e8-adcb-76111a82cff8
+	fromColumn: fact_user_game.game_name
+	toColumn: dim_game.Jogo
+

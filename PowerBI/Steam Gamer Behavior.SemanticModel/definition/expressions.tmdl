@@ -1,0 +1,8 @@
+/// Pasta com os CSVs exportados pelo notebook (termine com \)
+expression PastaDados = "C:\Users\anara\Desktop\Game Analysis\Gamer Behavior\exports\powerbi\" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: c27126ba-cd22-54ab-ab09-c90d152d8207
+
+	annotation PBI_ResultType = Text
+
+	annotation PBI_NavigationStepName = Navigation
+

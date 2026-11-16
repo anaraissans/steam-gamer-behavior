@@ -1,0 +1,187 @@
+table fact_user_game
+	lineageTag: f213af93-8d38-57b2-8652-e37c608e0879
+
+	/// Usuários distintos com interação no contexto.
+	measure Jogadores = DISTINCTCOUNT(fact_user_game[user_id])
+		formatString: #,0
+		displayFolder: Volume
+		lineageTag: 6e96ca3b-eeb3-535a-b7e4-12a6eeddb5a1
+
+	/// Jogos distintos no contexto.
+	measure Jogos = DISTINCTCOUNT(fact_user_game[game_name])
+		formatString: #,0
+		displayFolder: Volume
+		lineageTag: c60da719-2fd0-5bc9-b358-34e7daacd6ff
+
+	/// Pares usuário-jogo comprados.
+	measure Compras = SUM(fact_user_game[purchased])
+		formatString: #,0
+		displayFolder: Volume
+		lineageTag: fca835a3-c418-52d9-a2d0-0ed9c03e4101
+
+	/// Pares usuário-jogo com horas > 0.
+	measure 'Jogos Jogados' = SUM(fact_user_game[played])
+		formatString: #,0
+		displayFolder: Volume
+		lineageTag: d8b24213-0d31-5aee-8b94-47bde81a46b5
+
+	measure 'Horas Jogadas' = SUM(fact_user_game[hours_played])
+		formatString: #,0
+		displayFolder: Volume
+		lineageTag: 2f32c5c9-a7f5-5825-9f58-812da76dd31b
+
+	/// No nível do jogo: usuários que compraram.
+	measure Compradores = SUM(fact_user_game[purchased])
+		formatString: #,0
+		displayFolder: Jogos
+		lineageTag: c68d1c3f-32f3-58d7-b791-504bb2c8b9d7
+
+	/// No nível do jogo: usuários que jogaram (horas > 0).
+	measure 'Jogadores Ativos' = SUM(fact_user_game[played])
+		formatString: #,0
+		displayFolder: Jogos
+		lineageTag: 859ad3e8-126b-5470-852f-e3b185ffd252
+
+	/// Jogadores ativos / compradores (retention do notebook).
+	measure Retenção = DIVIDE([Jogadores Ativos], [Compradores])
+		formatString: 0.0%
+		displayFolder: Jogos
+		lineageTag: 1ff6e9de-e744-5e0c-879d-6534ce2b2994
+
+	/// Média de horas entre quem jogou (avg_hours_per_player).
+	measure 'Horas por Jogador Ativo' = DIVIDE([Horas Jogadas], [Jogadores Ativos])
+		formatString: #,0.0
+		displayFolder: Jogos
+		lineageTag: e974a0f5-dec8-523f-a3e7-67cc9920781c
+
+	measure 'Taxa Jogados/Comprados' = DIVIDE([Jogos Jogados], [Compras])
+		formatString: 0.0%
+		displayFolder: Engajamento
+		lineageTag: 859b919f-1acd-50f2-9aca-1c33900ecbf1
+
+	measure 'Compras por Jogador' = DIVIDE([Compras], [Jogadores])
+		formatString: #,0.0
+		displayFolder: Engajamento
+		lineageTag: f0ec14a8-fcc7-579a-8741-90ec58bfe50f
+
+	measure 'Jogos Jogados por Jogador' = DIVIDE([Jogos Jogados], [Jogadores])
+		formatString: #,0.0
+		displayFolder: Engajamento
+		lineageTag: 462c90de-3fb9-5d69-86eb-69f73760ba74
+
+	measure 'Horas por Jogador' = DIVIDE([Horas Jogadas], [Jogadores])
+		formatString: #,0.0
+		displayFolder: Engajamento
+		lineageTag: 4a9bf874-a291-5ca6-bfb4-d4b622336cae
+
+	measure 'Horas por Jogo Jogado' = DIVIDE([Horas Jogadas], [Jogos Jogados])
+		formatString: #,0.0
+		displayFolder: Engajamento
+		lineageTag: 9aed87a2-06c6-5461-9965-3b845f8bbf36
+
+	/// Média de share_top_game_hours: % das horas do usuário no seu jogo mais jogado.
+	measure 'Concentração no Jogo Favorito' = AVERAGE(dim_user[share_top_game_hours])
+		formatString: 0.0%
+		displayFolder: Engajamento
+		lineageTag: a37b8fcf-c2b5-552a-83a9-701249f2b236
+
+	measure '% Jogadores' = DIVIDE([Jogadores], CALCULATE([Jogadores], ALLSELECTED(dim_user)))
+		formatString: 0.0%
+		displayFolder: Participação
+		lineageTag: 00589b16-efe5-5760-a81f-600f5238f4ba
+
+	measure '% Horas' = DIVIDE([Horas Jogadas], CALCULATE([Horas Jogadas], ALLSELECTED(dim_user)))
+		formatString: 0.0%
+		displayFolder: Participação
+		lineageTag: 566a8b9a-3e92-5ea1-87a4-4ad25b82e377
+
+	measure '% Compras' = DIVIDE([Compras], CALCULATE([Compras], ALLSELECTED(dim_user)))
+		formatString: 0.0%
+		displayFolder: Participação
+		lineageTag: dc2fc332-08e4-5578-b637-2c7aa5c62892
+
+	/// Compradores apenas para os 15 jogos mais comprados no contexto.
+	measure 'Compradores (Top 15)' =
+			VAR _rank =
+			    RANKX(ALLSELECTED(dim_game[Jogo]), [Compradores], , DESC, Dense)
+			RETURN
+			    IF(ISINSCOPE(dim_game[Jogo]) && _rank <= 15, [Compradores])
+		formatString: #,0
+		displayFolder: Rankings
+		lineageTag: 8ce974d7-bdc2-521b-a999-0fae2406393c
+
+	/// Horas apenas para os 15 jogos mais jogados no contexto.
+	measure 'Horas Jogadas (Top 15)' =
+			VAR _rank =
+			    RANKX(ALLSELECTED(dim_game[Jogo]), [Horas Jogadas], , DESC, Dense)
+			RETURN
+			    IF(ISINSCOPE(dim_game[Jogo]) && _rank <= 15, [Horas Jogadas])
+		formatString: #,0
+		displayFolder: Rankings
+		lineageTag: 938995df-64a4-51bd-b3b7-92e8758dd995
+
+	column user_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: da505c36-16c2-51c7-bed9-b61a8844a5af
+		summarizeBy: none
+		sourceColumn: user_id
+
+		annotation SummarizationSetBy = User
+
+	column game_name
+		dataType: string
+		isHidden
+		lineageTag: f88bcb2c-a17b-50e4-a827-7049e5a20f2e
+		summarizeBy: none
+		sourceColumn: game_name
+
+		annotation SummarizationSetBy = User
+
+	column purchased
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 2dbb788a-7653-54e3-b083-23dd4e07cdae
+		summarizeBy: sum
+		sourceColumn: purchased
+
+		annotation SummarizationSetBy = User
+
+	column hours_played
+		dataType: double
+		isHidden
+		formatString: #,0.0
+		lineageTag: 93ab8175-72a2-59ea-83bc-2c44855c3ac7
+		summarizeBy: sum
+		sourceColumn: hours_played
+
+		annotation SummarizationSetBy = User
+
+	column played
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: ef60c75c-24a2-57a1-8d13-fbf45b149730
+		summarizeBy: sum
+		sourceColumn: played
+
+		annotation SummarizationSetBy = User
+
+	partition fact_user_game = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "fact_user_game.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+				    Cabecalhos = Table.PromoteHeaders(Fonte, [PromoteAllScalars=true]),
+				    Colunas = Table.SelectColumns(Cabecalhos, {"user_id", "game_name", "purchased", "hours_played", "played"}),
+				    Tipos = Table.TransformColumnTypes(Colunas, {
+				        {"user_id", Int64.Type}, {"game_name", type text}, {"purchased", Int64.Type},
+				        {"hours_played", type number}, {"played", Int64.Type}
+				    }, "en-US")
+				in
+				    Tipos
+
+	annotation PBI_ResultType = Table
+
